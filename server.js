@@ -7,7 +7,7 @@ const { MongoClient } = require('mongodb');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_NAME = process.env.DB_NAME || 'hirishi-mirror';
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://hirishi-mirror-frontend.vercel.app';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://hirishi-mirror.vercel.app';
 
 // Resolve MongoDB URI from env or a local .env file without extra deps.
 function resolveMongoUri() {
