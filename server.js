@@ -7,6 +7,7 @@ const { MongoClient } = require('mongodb');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_NAME = process.env.DB_NAME || 'hirishi-mirror';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://hirishi-mirror-frontend.vercel.app';
 
 // Resolve MongoDB URI from env or a local .env file without extra deps.
 function resolveMongoUri() {
@@ -53,14 +54,22 @@ function setUserIdCookie(res, userId) {
   // Express has res.cookie; fallback to manual Set-Cookie if unavailable.
   const opts = {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'none',
+    secure: true,
     path: '/',
     maxAge: 1000 * 60 * 60 * 24 * 365, // ~1 year
   };
   if (typeof res.cookie === 'function') {
     res.cookie('userId', userId, opts);
   } else {
-    const parts = [`userId=${userId}`, 'Path=/', 'SameSite=Lax', 'Max-Age=' + opts.maxAge / 1000, 'HttpOnly'];
+    const parts = [
+      `userId=${userId}`,
+      'Path=/',
+      'SameSite=None',
+      'Secure',
+      'Max-Age=' + opts.maxAge / 1000,
+      'HttpOnly',
+    ];
     res.setHeader('Set-Cookie', parts.join('; '));
   }
 }
@@ -75,6 +84,16 @@ async function connectToDatabase() {
   await collection.createIndex({ createdAt: 1 });
   console.log('Connected to MongoDB');
 }
+
+// Allow the Vercel frontend to call the Render API with cookies.
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 app.use(express.json());
 
